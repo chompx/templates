@@ -1,0 +1,106 @@
+#!/usr/local/bin/python3
+#
+
+# aws_create_user
+#    simplifies creating new IAM users in accounts
+
+import os, sys, getopt
+
+import configparser
+
+
+profiles= { }
+
+
+# for k,v in profiles.items():
+#     print(f" name:  {k}   target:  {v[1]}")
+	 
+
+def help():
+    print("aws_create_users  --> lists options")
+    print("   options:   ")
+    print("   --userfile  <filename>    points to a file, each line contains a username and email address   ")
+    print("myssh [N]         --> ssh to option number N")
+    print("myssh [name]      --> ssh to name")
+    print("myssh -h          --> help")
+    sys.exit(0)
+
+
+def get_config():
+    path = = os.path.join(os.path.expanduser('~'), '.aws/config')
+    config = configparser.ConfigParser()
+    config.read(path)
+    profiles = [ s.split()[1] for s in config.sections() if 'profile' in s ]
+
+
+def get_data(t):
+    if t.isdigit():
+        k = list(hosts.keys())[int(t)]
+    elif t not in hosts.keys():
+        print(f"unrecognized name:  {k}")
+        sys.exit(1)
+    else:
+        k = t
+    return hosts[k]
+
+def ssh_command(t):
+    data = get_data(t)
+    command = f"ssh -i ~/.ssh/{data[2]} {data[0]}@{data[1]}"
+    print(f"command:  {command}")
+    os.system(command)
+
+def rsync_push(t,d1,d2):
+    data = get_data(t)
+    command = f"rsync -auv --exclude=\"*~\" --exclude=\".git/\" --exclude=\".DS_Store\" --exclude=\".git*\" --exclude=\"IBJts/\" --no-links -e 'ssh -i ~/.ssh/{data[2]}' {d1}  {data[0]}@{data[1]}:{d2}"
+    print(f"command:  {command}")
+    os.system(command)
+        
+def rsync_pull(t,d1,d2):
+    data = get_data(t)
+    command = f"rsync -auv --exclude=\"*~\" --exclude=\".git/\" --exclude=\".DS_Store\" --exclude=\".git*\" --exclude=\"IBJts/\" --no-links -e 'ssh -i ~/.ssh/{data[2]}' {data[0]}@{data[1]}:{d1} {d2}"
+    print(f"command:  {command}")
+    os.system(command)
+        
+def main():
+
+    do_push = False
+    do_pull = False
+    
+    try:
+        opts, args = getopt.getopt(sys.argv[1:],"h",['push','pull'])
+    except getopt.GetoptError:
+        help()
+
+    inputs = args
+        
+    for opt, arg in opts:
+        if opt == '-h':
+             self.help()
+        elif opt == '--push':
+            do_push = True
+        elif opt == '--pull':
+            do_pull = True
+
+    if (len(inputs) < 1):
+        for i,n in enumerate(hosts.keys()):
+            print(f"  [{i:2}]    {n}")
+    else:
+        target = inputs[0]
+
+    if len(inputs)==1:
+        ssh_command(target)
+    elif do_push:
+        if len(inputs)!=3:
+            print(f"Expected target, sourcedir, destdir but got [{inputs}]")
+            sys.exit(1)
+        rsync_push(target, inputs[1], inputs[2])
+    elif do_pull:
+        if len(inputs)!=3:
+            print(f"Expected target, sourcedir, destdir but got [{inputs}]")
+            sys.exit(1)
+        rsync_pull(target, inputs[1], inputs[2])
+        
+
+if __name__ == '__main__':
+    main()
+
